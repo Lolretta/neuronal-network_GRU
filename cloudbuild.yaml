@@ -1,0 +1,8 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      ["build", "-t", "us-central1-docker.pkg.dev/$PROJECT_ID/pm25-gru/gru-modelo:latest", "-f", "DockerFile", "."]
+images:
+  - "us-central1-docker.pkg.dev/$PROJECT_ID/pm25-gru/gru-modelo:latest"
+options:
+  logging: CLOUD_LOGGING_ONLY

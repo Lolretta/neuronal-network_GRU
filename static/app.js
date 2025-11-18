@@ -1,6 +1,7 @@
 const form = document.getElementById('predictForm');
 const hoursInput = document.getElementById('hoursInput');
 const chartImg = document.getElementById('chartImg');
+const coneImg = document.getElementById('coneImg');
 const tableBody = document.querySelector('#resultsTable tbody');
 const errorBox = document.getElementById('errorBox');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -174,6 +175,9 @@ form.addEventListener('submit', async (e) => {
 
     lastPredictions = data.predictions || [];
     chartImg.src = `data:image/png;base64,${data.chart_base64}`;
+    if (data.cone_chart_base64) {
+      coneImg.src = `data:image/png;base64,${data.cone_chart_base64}`;
+    }
     renderTable(lastPredictions);
     enableDownload(lastPredictions);
     renderExplainer(lastPredictions);

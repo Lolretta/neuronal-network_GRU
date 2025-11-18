@@ -1,0 +1,32 @@
+# Imagen base con Python (3.10 por compatibilidad con TensorFlow 2.15)
+FROM python:3.10-slim
+
+# Evitar .pyc y usar salida sin buffer
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Instalar dependencias del sistema (útil para numpy/pandas/etc.)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar requirements e instalar dependencias
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar el resto del código
+COPY . /app
+
+# Copiar artefactos y datos (si existen en el contexto)
+COPY models/ /app/models/
+COPY data/ /app/data/
+
+# Exponer el puerto 8080 (informativo)
+EXPOSE 8080
+
+# Comando para levantar Flask con gunicorn
+# OJO: si tu archivo no se llama app.py o tu objeto Flask no es "app", cambia esto
+CMD ["bash", "-lc", "gunicorn -b 0.0.0.0:${PORT:-8080} app:app"]

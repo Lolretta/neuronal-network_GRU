@@ -163,6 +163,78 @@ def _build_chart_base64(data: np.ndarray, predictions: np.ndarray):
     return b64
 
 
+def _build_uncertainty_cone_base64(data: np.ndarray, model: tf.keras.Model, scaler: MinMaxScaler,
+                                   hours: int, n_iterations: int = 50,
+                                   ci_low: float = 5.0, ci_high: float = 95.0):
+    """Genera gráfico con cono de incertidumbre usando Monte Carlo Dropout.
+
+    - Ejecuta múltiples iteraciones con `training=True` para activar dropout.
+    - Calcula media y percentiles para las próximas `hours`.
+    - Devuelve imagen en base64.
+    """
+    # Historia y eje temporal
+    hist_len = min(24, data.shape[0])
+    last_24_real = data[-hist_len:, 0]
+    time_history = np.arange(-hist_len, 0)
+    time_future = np.arange(0, hours)
+
+    # Secuencia inicial normalizada
+    data_scaled = scaler.transform(data)
+    last_seq = data_scaled[-SEQ_LENGTH:, :].reshape(1, SEQ_LENGTH, -1)
+
+    # Monte Carlo sobre el horizonte
+    mc_preds_scaled = []  # shape: (n_iterations, hours)
+    for _ in range(n_iterations):
+        seq_mc = last_seq.copy()
+        preds_iter = []
+        for _h in range(hours):
+            # llamada con training=True para activar dropout
+            next_pred_scaled = model(seq_mc, training=True).numpy()[0, 0]
+            preds_iter.append(next_pred_scaled)
+            new_row = seq_mc[0, -1, :].copy().reshape(1, 1, -1)
+            new_row[0, 0, 0] = next_pred_scaled
+            seq_mc = np.concatenate([seq_mc[:, 1:, :], new_row], axis=1)
+        mc_preds_scaled.append(preds_iter)
+
+    mc_preds_scaled = np.array(mc_preds_scaled)  # (n_iter, hours)
+
+    # Desescalar todas las iteraciones a escala original del target
+    mc_preds_denorm = []
+    for iter_preds in mc_preds_scaled:
+        denorm = scaler.inverse_transform(
+            np.column_stack([
+                iter_preds,
+                np.zeros((len(iter_preds), data.shape[1] - 1))
+            ])
+        )[:, 0]
+        mc_preds_denorm.append(denorm)
+    mc_preds_denorm = np.array(mc_preds_denorm)  # (n_iter, hours)
+
+    mean_prediction = np.mean(mc_preds_denorm, axis=0)
+    lower_bound = np.percentile(mc_preds_denorm, ci_low, axis=0)
+    upper_bound = np.percentile(mc_preds_denorm, ci_high, axis=0)
+
+    # Graficar cono
+    fig, ax = plt.subplots(figsize=(14, 7))
+    ax.plot(time_history, last_24_real, label='History (Last 24h)', color='#4A90E2', linewidth=2.0)
+    ax.plot(time_future, mean_prediction, label=f'Forecast mean (Next {hours}h)', color='#FF6B35', linewidth=2.0)
+    ax.fill_between(time_future, lower_bound, upper_bound, alpha=0.3, color='#FF6B35', label='Uncertainty (90% CI)')
+    ax.axvline(x=0, color='gray', linestyle='--', linewidth=1.0, alpha=0.7, label='Prediction Start')
+    ax.set_title('PM2.5 Forecast with Uncertainty Cone', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Time step (hours)', fontsize=12)
+    ax.set_ylabel('PM2.5 Concentration', fontsize=12)
+    ax.legend(fontsize=11, loc='best')
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', bbox_inches='tight')
+    plt.close(fig)
+    buf.seek(0)
+    b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    return b64, mean_prediction.tolist(), lower_bound.tolist(), upper_bound.tolist()
+
+
 # === Rutas ===
 @app.route('/', methods=['GET'])
 def index():
@@ -192,6 +264,9 @@ def predict():
 
         preds = _predict_future_hours(model, scaler, data, hours)
         chart_b64 = _build_chart_base64(data, preds)
+        cone_b64, cone_mean, cone_low, cone_high = _build_uncertainty_cone_base64(
+            data, model, scaler, hours, n_iterations=50, ci_low=5.0, ci_high=95.0
+        )
 
         # Tabla con dos decimales
         table = [{'hour': i + 1, 'value': round(float(v), 2)} for i, v in enumerate(preds)]
@@ -200,6 +275,10 @@ def predict():
             'hours': hours,
             'predictions': [round(float(v), 2) for v in preds],
             'chart_base64': chart_b64,
+            'cone_chart_base64': cone_b64,
+            'cone_mean': [round(float(v), 2) for v in cone_mean],
+            'cone_low': [round(float(v), 2) for v in cone_low],
+            'cone_high': [round(float(v), 2) for v in cone_high],
             'columns': [TARGET_COL] + feature_columns,
             'table': table
         })
