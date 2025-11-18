@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -19,8 +20,8 @@ warnings.filterwarnings('ignore')
 tf.random.set_seed(1234)
 np.random.seed(1234)
 
-# Load the data
-file = 'contamination.csv'
+# Load the data (ajustado a nueva estructura)
+file = os.path.join('data', 'contamination.csv')
 df = pd.read_csv(file)
 
 # Select the target
@@ -398,13 +399,19 @@ for i in range(6):
     print(f"Hora +{i+1}: {mean_prediction[i]:.2f} PM2.5 (IC 90%: [{lower_bound[i]:.2f}, {upper_bound[i]:.2f}])")
 
 
-# === SAVE MODEL ===
-model.save('gru_pm25_model.h5')
-model.save('gru_pm25_model.keras')
-print("\n✓ Modelo guardado como 'gru_pm25_model.h5'")
+# === SAVE MODEL (ajustado a carpeta models) ===
+models_dir = 'models'
+os.makedirs(models_dir, exist_ok=True)
+model_h5_path = os.path.join(models_dir, 'gru_pm25_model.h5')
+model_keras_path = os.path.join(models_dir, 'gru_pm25_model.keras')
+scaler_path = os.path.join(models_dir, 'scaler.pkl')
+
+model.save(model_h5_path)
+model.save(model_keras_path)
+print(f"\n✓ Modelo guardado como '{model_h5_path}' y '{model_keras_path}'")
 
 # Guardar el scaler para uso futuro
 import pickle
-with open('scaler.pkl', 'wb') as f:
+with open(scaler_path, 'wb') as f:
     pickle.dump(scaler, f)
-print("✓ Scaler guardado como 'scaler.pkl'")
+print(f"✓ Scaler guardado como '{scaler_path}'")
