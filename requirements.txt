@@ -1,7 +1,7 @@
 Flask==3.1.2
 numpy==1.26.4
-tensorflow==2.15.0
-matplotlib==3.10.7
-
 pandas==2.3.3
 scikit-learn==1.7.2
+
+# Si necesitas TensorFlow en el servidor:
+tensorflow==2.20.0      # o tensorflow-cpu==2.20.0
