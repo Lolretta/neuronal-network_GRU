@@ -62,6 +62,39 @@
         </div>
       </div>
 
+      <div class="card mb-4">
+        <div class="card-header">Explicación GRU/Minions</div>
+        <div class="card-body" id="gruExplainer">
+          <p class="mb-2">
+            Imagina a <strong>Gru</strong> coordinando a los minions: nuestra
+            <strong>GRU</strong> (Gated Recurrent Unit) "recuerda" las últimas horas
+            y planifica las siguientes para anticipar la concentración de PM2.5.
+          </p>
+          <p class="text-muted mb-0">
+            Tras realizar una predicción, aquí verás una explicación sencilla con
+            flechas de tendencia (↗️/↘️/→), el promedio estimado y recomendaciones
+            rápidas según el umbral de 15 µg/m³.
+          </p>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">Briefing de Misión</div>
+        <div class="card-body" id="missionBrief">
+          <p class="mb-2">
+            Antes de salir, el equipo necesita saber la <strong>calidad del aire</strong>
+            de las próximas horas para decidir <strong>qué nave y equipo</strong> llevar.
+          </p>
+          <ul class="mb-2 text-muted">
+            <li>Predice las próximas horas para ver la recomendación.</li>
+            <li>La elección es conservadora (se toma el pico previsto).</li>
+          </ul>
+          <div id="missionRecommendation" class="alert alert-info mb-0">
+            Aún no hay predicción. Realiza una para obtener el plan de misión.
+          </div>
+        </div>
+      </div>
+
       <footer class="mt-4 mb-3 text-center text-muted">
         <small>Tiempo de respuesta esperado &lt; 2s</small>
       </footer>
