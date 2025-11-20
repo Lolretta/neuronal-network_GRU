@@ -226,7 +226,6 @@ plt.tight_layout()
 plt.show()
 
 # ===== FIGURA 4: Últimas 24 horas + Predicción Futura (6 horas) =====
-# CORRECCIÓN: Usar los ÚLTIMOS datos completos (no solo del test)
 # Tomar las últimas seq_length observaciones de TODOS los datos NORMALIZADOS
 last_sequence_full = data_scaled[-seq_length:, :].reshape(1, seq_length, -1)
 
